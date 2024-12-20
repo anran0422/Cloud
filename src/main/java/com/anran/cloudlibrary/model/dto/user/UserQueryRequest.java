@@ -11,7 +11,6 @@ import java.io.Serializable;
 public class UserQueryRequest extends PageRequest implements Serializable {
 
     private static final long serialVersionUID = 1L;
-
     /**
      * id
      */
@@ -23,17 +22,19 @@ public class UserQueryRequest extends PageRequest implements Serializable {
     private String userName;
 
     /**
-     * 用户头像
+     * 账号
      */
-    private String userAvatar;
+    private String userAccount;
 
     /**
-     * 用户简介
+     * 简介
      */
     private String userProfile;
 
     /**
-     * 用户角色：user/admin
+     * 用户角色：user/admin/ban
      */
     private String userRole;
+
+
 }

@@ -162,6 +162,14 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     }
 
     @Override
+    public boolean isAdmin(User user) {
+        // 下边更加合理一些，按照 角色身份判断；我写的这个也合理
+        //        return user != null && UserConstant.ADMIN_ROLE.equals(user.getUserRole());
+        return user != null && UserRoleEnum.ADMIN.getValue().equals(user.getUserRole());
+
+    }
+
+    @Override
     public LoginUserVO getLoginUserVO(User user) {
         // 校验
         if (user == null) return null;

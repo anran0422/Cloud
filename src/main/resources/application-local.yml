@@ -10,9 +10,6 @@ spring:
   servlet:
     multipart:
       max-file-size: 10MB
-  # 为了限制 COS 云服务，使用local配置
-  profiles:
-    active: local
 
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -42,3 +39,12 @@ knife4j:
         api-rule: package
         api-rule-resources:
           - com.anran.cloudlibrary.controller
+
+# 对象存储配置（需要从腾讯云获取）
+cos:
+  client:
+    host: https://cloud-1311088844.cos.ap-beijing.myqcloud.com
+    secretId: AKIDfBU7eyFIMK3zHdncMuGWknfLWXKsDRUL
+    secretKey: qxY4OOErGQOFwQB471h96tUYQEsJVUGK
+    region: ap-beijing
+    bucket: cloud-1311088844

@@ -8,6 +8,9 @@ import com.anran.cloudlibrary.exception.BusinessException;
 import com.anran.cloudlibrary.exception.ErrorCode;
 import com.anran.cloudlibrary.exception.ThrowUtils;
 import com.anran.cloudlibrary.manager.FileManager;
+import com.anran.cloudlibrary.manager.upload.FilePictureUpload;
+import com.anran.cloudlibrary.manager.upload.PictureUploadTemplate;
+import com.anran.cloudlibrary.manager.upload.UrlPictureUpload;
 import com.anran.cloudlibrary.mapper.PictureMapper;
 import com.anran.cloudlibrary.model.VO.PictureVO;
 import com.anran.cloudlibrary.model.VO.UserVO;
@@ -24,7 +27,6 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
@@ -45,6 +47,11 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
 
     @Resource
     private FileManager fileManager;
+    @Resource
+    private FilePictureUpload filePictureUpload;
+
+    @Resource
+    private UrlPictureUpload urlPictureUpload;
 
     @Resource
     private UserService userService;
@@ -52,13 +59,14 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
     /**
      * 上传图片
      *
-     * @param multipartFile        上传文件
+     * @param inputSource          上传文件类型
      * @param pictureUploadRequest 上传请求
      * @param loginUser            登录用户
      * @return PictureVO
      */
     @Override
-    public PictureVO uploadPicture(MultipartFile multipartFile, PictureUploadRequest pictureUploadRequest, User loginUser) {
+    public PictureVO uploadPicture(Object inputSource, PictureUploadRequest pictureUploadRequest, User loginUser) {
+        ThrowUtils.throwIf(inputSource == null, ErrorCode.PARAMS_ERROR, "图片为空");
         ThrowUtils.throwIf(loginUser == null, ErrorCode.NO_AUTH_ERROR, "未登录不能上传图片");
         // todo 这里不能直接返回，因为这里不知道是 新增 还是 更新
         // todo 属于是封装了一层，因为有共通的逻辑，增加一些直接融合
@@ -82,7 +90,13 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         // 上传图片，得到图片返回的信息
         // 按照用户 id 划分上传目录
         String uploadPathPrefix = String.format("public/%s", loginUser.getId());
-        UploadPictureResult uploadPictureResult = fileManager.uploadPicture(multipartFile, uploadPathPrefix);
+        // todo 根据 inputSource 类型区分上传方式
+        PictureUploadTemplate pictureUploadTemplate = filePictureUpload;
+        if (inputSource instanceof String) {
+            pictureUploadTemplate = urlPictureUpload;
+        }
+        UploadPictureResult uploadPictureResult = pictureUploadTemplate.uploadPicture(inputSource, uploadPathPrefix);
+
         // 构建要入库的图片信息
         Picture picture = new Picture();
         picture.setUrl(uploadPictureResult.getUrl());

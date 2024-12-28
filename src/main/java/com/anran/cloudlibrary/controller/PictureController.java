@@ -12,13 +12,11 @@ import com.anran.cloudlibrary.exception.ErrorCode;
 import com.anran.cloudlibrary.exception.ThrowUtils;
 import com.anran.cloudlibrary.manager.CosManager;
 import com.anran.cloudlibrary.model.VO.PictureVO;
-import com.anran.cloudlibrary.model.dto.picture.PictureEditRequest;
-import com.anran.cloudlibrary.model.dto.picture.PictureQueryRequest;
-import com.anran.cloudlibrary.model.dto.picture.PictureUpdateRequest;
-import com.anran.cloudlibrary.model.dto.picture.PictureUploadRequest;
+import com.anran.cloudlibrary.model.dto.picture.*;
 import com.anran.cloudlibrary.model.entity.Picture;
 import com.anran.cloudlibrary.model.entity.PictureTagCategory;
 import com.anran.cloudlibrary.model.entity.User;
+import com.anran.cloudlibrary.model.enums.PictureReviewStatusEnum;
 import com.anran.cloudlibrary.model.enums.UserRoleEnum;
 import com.anran.cloudlibrary.service.PictureService;
 import com.anran.cloudlibrary.service.UserService;
@@ -165,8 +163,8 @@ public class PictureController {
      * 更新图片（仅管理员）
      */
     @PostMapping("/update")
-    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
-    public BaseResponse<Boolean> updatePicture(@RequestBody PictureUpdateRequest pictureUpdateRequest) {
+    public BaseResponse<Boolean> updatePicture(@RequestBody PictureUpdateRequest pictureUpdateRequest,
+                                               HttpServletRequest request) {
         if (pictureUpdateRequest == null || pictureUpdateRequest.getId() <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
@@ -176,12 +174,18 @@ public class PictureController {
         BeanUtil.copyProperties(pictureUpdateRequest, picture);
         // tags 将 list 转化 JSONStr(数据库存储的是 JSON)
         picture.setTags(JSONUtil.toJsonStr(pictureUpdateRequest.getTags()));
+
         // 校验更新后的图片
         pictureService.validPicture(picture);
         // 判断原本的图片是否还存在
         Long id = pictureUpdateRequest.getId();
         Picture oldPicture = pictureService.getById(id);
         ThrowUtils.throwIf(oldPicture == null, ErrorCode.NOT_FOUND_ERROR);
+
+        //补充审核参数
+        User loginUser = userService.getLoginUser(request);
+        pictureService.fillReviewParams(picture, loginUser);
+
         // 操作数据库
         boolean res = pictureService.updateById(picture);
         ThrowUtils.throwIf(!res, ErrorCode.PARAMS_ERROR);
@@ -245,7 +249,8 @@ public class PictureController {
 
         // 限制爬虫
         ThrowUtils.throwIf(pageSize > 20, ErrorCode.PARAMS_ERROR);
-
+        // 普通用户默认只能查看已过审的图片
+        pictureQueryRequest.setReviewStatus(PictureReviewStatusEnum.PASS.getValue());
         // 通过查询条件 查询数据库
         Page<Picture> picturePage = pictureService.page(new Page<>(current, pageSize),
                 pictureService.getQueryWrapper(pictureQueryRequest));
@@ -277,10 +282,11 @@ public class PictureController {
         ThrowUtils.throwIf(oldPicture == null, ErrorCode.NOT_FOUND_ERROR);
         // 仅本人和管理员可以编辑
         User loginUser = userService.getLoginUser(request);
-//        !UserConstant.ADMIN_ROLE.equals(loginUser.getUserRole()) 下边更简短一些
         if (!oldPicture.getUserId().equals(loginUser.getId()) && !userService.isAdmin(loginUser)) {
             throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
         }
+        // 补充审核参数
+        pictureService.fillReviewParams(picture, loginUser);
         // 操作数据库
         boolean res = pictureService.updateById(picture);
         ThrowUtils.throwIf(!res, ErrorCode.PARAMS_ERROR);
@@ -298,5 +304,18 @@ public class PictureController {
         pictureTagCategory.setTagList(tagList);
         pictureTagCategory.setCategoryList(categoryList);
         return ResultUtils.success(pictureTagCategory);
+    }
+
+    /**
+     * 管理员审核图片
+     */
+    @PostMapping("/review")
+    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
+    public BaseResponse<Boolean> doPictureReview(@RequestBody PictureReviewRequest pictureReviewRequest,
+                                                 HttpServletRequest request) {
+        ThrowUtils.throwIf(pictureReviewRequest == null, ErrorCode.PARAMS_ERROR);
+        User loginUser = userService.getLoginUser(request);
+        pictureService.doPictureReview(pictureReviewRequest, loginUser);
+        return ResultUtils.success(true);
     }
 }

@@ -2,6 +2,7 @@ package com.anran.cloudlibrary.service;
 
 import com.anran.cloudlibrary.model.VO.PictureVO;
 import com.anran.cloudlibrary.model.dto.picture.PictureQueryRequest;
+import com.anran.cloudlibrary.model.dto.picture.PictureReviewRequest;
 import com.anran.cloudlibrary.model.dto.picture.PictureUploadRequest;
 import com.anran.cloudlibrary.model.entity.Picture;
 import com.anran.cloudlibrary.model.entity.User;
@@ -25,7 +26,6 @@ public interface PictureService extends IService<Picture> {
      * @param multipartFile        上传文件
      * @param pictureUploadRequest 上传请求
      * @param loginUser            登录用户
-     * @return
      */
     PictureVO uploadPicture(MultipartFile multipartFile,
                             PictureUploadRequest pictureUploadRequest,
@@ -38,4 +38,17 @@ public interface PictureService extends IService<Picture> {
     Page<PictureVO> getPictureVOPage(Page<Picture> picturePage, HttpServletRequest request);
 
     void validPicture(Picture picture);
+
+    /**
+     * 图片审核
+     *
+     * @param pictureReviewRequest 审核请求
+     * @param loginUser            谁操作审核
+     */
+    void doPictureReview(PictureReviewRequest pictureReviewRequest, User loginUser);
+
+    /**
+     * 自动补充审核状态
+     */
+    void fillReviewParams(Picture picture, User loginUser);
 }

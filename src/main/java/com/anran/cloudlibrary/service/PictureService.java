@@ -3,6 +3,7 @@ package com.anran.cloudlibrary.service;
 import com.anran.cloudlibrary.model.VO.PictureVO;
 import com.anran.cloudlibrary.model.dto.picture.PictureQueryRequest;
 import com.anran.cloudlibrary.model.dto.picture.PictureReviewRequest;
+import com.anran.cloudlibrary.model.dto.picture.PictureUploadByBatchRequest;
 import com.anran.cloudlibrary.model.dto.picture.PictureUploadRequest;
 import com.anran.cloudlibrary.model.entity.Picture;
 import com.anran.cloudlibrary.model.entity.User;
@@ -50,4 +51,14 @@ public interface PictureService extends IService<Picture> {
      * 自动补充审核状态
      */
     void fillReviewParams(Picture picture, User loginUser);
+
+    /**
+     * 批量抓取和创建图片
+     *
+     * @param pictureUploadByBatchRequest 抓取请求
+     * @param loginUser                   登录用户
+     * @return 成功创建的图片数
+     */
+    Integer uploadPictureByBatch(PictureUploadByBatchRequest pictureUploadByBatchRequest,
+                                 User loginUser);
 }

@@ -1,5 +1,6 @@
 package com.anran.cloudlibrary.manager.upload;
 
+import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.NumberUtil;
 import cn.hutool.core.util.RandomUtil;
@@ -9,12 +10,15 @@ import com.anran.cloudlibrary.exception.ErrorCode;
 import com.anran.cloudlibrary.manager.CosManager;
 import com.anran.cloudlibrary.model.dto.file.UploadPictureResult;
 import com.qcloud.cos.model.PutObjectResult;
+import com.qcloud.cos.model.ciModel.persistence.CIObject;
 import com.qcloud.cos.model.ciModel.persistence.ImageInfo;
+import com.qcloud.cos.model.ciModel.persistence.ProcessResults;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.annotation.Resource;
 import java.io.File;
 import java.util.Date;
+import java.util.List;
 
 @Slf4j
 public abstract class PictureUploadTemplate {
@@ -47,8 +51,20 @@ public abstract class PictureUploadTemplate {
             // 4.上传图片到对象存储
             PutObjectResult putObjectResult = cosManager.putPictureObject(uploadPath, file);
             ImageInfo imageInfo = putObjectResult.getCiUploadResult().getOriginalInfo().getImageInfo();
+            ProcessResults processResults = putObjectResult.getCiUploadResult().getProcessResults();
+            List<CIObject> objectList = processResults.getObjectList();
+            if (CollUtil.isNotEmpty(objectList)) {
+                CIObject compressedObject = objectList.get(0);
+                // 缩略图默认等于压缩图
+                CIObject thumbnailObject = compressedObject;
+                if (objectList.size() > 1) {
+                    thumbnailObject = objectList.get(1);
+                }
+                // 封装缩略图返回结果
+                return buildResult(originalFilename, compressedObject, thumbnailObject);
+            }
 
-            // 5. 疯转返回结果
+            // 5. 封装返回结果
             return buildResult(imageInfo, uploadPath, originalFilename, file);
         } catch (Exception e) {
             log.error("图片上传到 COS 失败");
@@ -82,6 +98,29 @@ public abstract class PictureUploadTemplate {
         uploadPictureResult.setPicHeight(picHeight);
         uploadPictureResult.setPicScale(picScale);
         uploadPictureResult.setPicFormat(imageInfo.getFormat());
+        return uploadPictureResult;
+    }
+
+    /**
+     * 图片压缩 webp + 缩略图 thumbnail
+     * 构建上传 COS 的返回结果
+     */
+    private UploadPictureResult buildResult(String originalFilename, CIObject compressedCiObject, CIObject thumbnailObject) {
+        UploadPictureResult uploadPictureResult = new UploadPictureResult();
+        int picWidth = compressedCiObject.getWidth();
+        int picHeight = compressedCiObject.getHeight();
+        double picScale = NumberUtil.round(picWidth * 1.0 / picHeight, 2).doubleValue();
+
+        // 封装图片的返回结果
+        uploadPictureResult.setUrl(cosClientConfig.getHost() + '/' + compressedCiObject.getKey());
+        uploadPictureResult.setPicName(FileUtil.mainName(originalFilename));
+        uploadPictureResult.setPicSize(compressedCiObject.getSize().longValue());
+        uploadPictureResult.setPicWidth(picWidth);
+        uploadPictureResult.setPicHeight(picHeight);
+        uploadPictureResult.setPicScale(picScale);
+        uploadPictureResult.setPicFormat(compressedCiObject.getFormat());
+        uploadPictureResult.setThumbnailUrl(cosClientConfig.getHost() + '/' + thumbnailObject.getKey());
+
         return uploadPictureResult;
     }
 

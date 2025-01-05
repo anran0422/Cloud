@@ -10,15 +10,22 @@ spring:
   servlet:
     multipart:
       max-file-size: 10MB
-  # 为了限制 COS 云服务，使用local配置
-  profiles:
-    active: local
+    # 为了限制 COS 云服务，使用local配置
 
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://localhost:3306/cloud
     username: root
     password: 12345678
+
+  # Redis 配置
+  redis:
+    database: 0
+    host: 127.0.0.1
+    port: 6379
+    timeout: 5000
+  profiles:
+    active: local
 
 mybatis-plus:
   configuration:

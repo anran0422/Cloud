@@ -1,10 +1,7 @@
 package com.anran.cloudlibrary.service;
 
 import com.anran.cloudlibrary.model.VO.PictureVO;
-import com.anran.cloudlibrary.model.dto.picture.PictureQueryRequest;
-import com.anran.cloudlibrary.model.dto.picture.PictureReviewRequest;
-import com.anran.cloudlibrary.model.dto.picture.PictureUploadByBatchRequest;
-import com.anran.cloudlibrary.model.dto.picture.PictureUploadRequest;
+import com.anran.cloudlibrary.model.dto.picture.*;
 import com.anran.cloudlibrary.model.entity.Picture;
 import com.anran.cloudlibrary.model.entity.User;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
@@ -31,12 +28,24 @@ public interface PictureService extends IService<Picture> {
                             PictureUploadRequest pictureUploadRequest,
                             User loginUser);
 
+    /**
+     * 获取查询对象
+     */
     QueryWrapper<Picture> getQueryWrapper(PictureQueryRequest pictureQueryRequest);
 
+    /**
+     * 获取查询对象包装类（单张）
+     */
     PictureVO getPictureVO(Picture picture, HttpServletRequest request);
 
+    /**
+     * 获取查询对象包装类（分页）
+     */
     Page<PictureVO> getPictureVOPage(Page<Picture> picturePage, HttpServletRequest request);
 
+    /**
+     * 校验图片
+     */
     void validPicture(Picture picture);
 
     /**
@@ -61,4 +70,21 @@ public interface PictureService extends IService<Picture> {
      */
     Integer uploadPictureByBatch(PictureUploadByBatchRequest pictureUploadByBatchRequest,
                                  User loginUser);
+
+    /**
+     * 校验空间图片的权限
+     */
+    void checkPictureAuth(Picture picture, User loginUser);
+
+
+    /**
+     * 删除图片
+     */
+    void deletePicture(long pictureId, User loginUser);
+
+    /**
+     * 编辑图片
+     */
+    void editPicture(PictureEditRequest pictureEditRequest,
+                     User loginUser);
 }

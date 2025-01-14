@@ -28,8 +28,7 @@ public abstract class PictureUploadTemplate {
 
     @Resource
     protected CosClientConfig cosClientConfig;
-
-
+    
     public UploadPictureResult uploadPicture(Object inputSource, String uploadPathPrefix) {
         // 1. 校验图片
         validPicture(inputSource);

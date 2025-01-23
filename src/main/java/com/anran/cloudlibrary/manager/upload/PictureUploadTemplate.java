@@ -28,7 +28,7 @@ public abstract class PictureUploadTemplate {
 
     @Resource
     protected CosClientConfig cosClientConfig;
-    
+
     public UploadPictureResult uploadPicture(Object inputSource, String uploadPathPrefix) {
         // 1. 校验图片
         validPicture(inputSource);
@@ -52,7 +52,9 @@ public abstract class PictureUploadTemplate {
             ImageInfo imageInfo = putObjectResult.getCiUploadResult().getOriginalInfo().getImageInfo();
             ProcessResults processResults = putObjectResult.getCiUploadResult().getProcessResults();
             List<CIObject> objectList = processResults.getObjectList();
+            // todo 是否对图片做了处理
             if (CollUtil.isNotEmpty(objectList)) {
+                // 压缩图 + 缩略图 处理
                 CIObject compressedObject = objectList.get(0);
                 // 缩略图默认等于压缩图
                 CIObject thumbnailObject = compressedObject;
@@ -60,7 +62,7 @@ public abstract class PictureUploadTemplate {
                     thumbnailObject = objectList.get(1);
                 }
                 // 封装缩略图返回结果
-                return buildResult(originalFilename, compressedObject, thumbnailObject);
+                return buildResult(originalFilename, compressedObject, thumbnailObject, imageInfo);
             }
 
             // 5. 封装返回结果
@@ -97,6 +99,8 @@ public abstract class PictureUploadTemplate {
         uploadPictureResult.setPicHeight(picHeight);
         uploadPictureResult.setPicScale(picScale);
         uploadPictureResult.setPicFormat(imageInfo.getFormat());
+        // 得到图片的主色调
+        uploadPictureResult.setPicColor(imageInfo.getAve());
         return uploadPictureResult;
     }
 
@@ -104,13 +108,15 @@ public abstract class PictureUploadTemplate {
      * 图片压缩 webp + 缩略图 thumbnail
      * 构建上传 COS 的返回结果
      */
-    private UploadPictureResult buildResult(String originalFilename, CIObject compressedCiObject, CIObject thumbnailObject) {
+    private UploadPictureResult buildResult(String originalFilename, CIObject compressedCiObject, CIObject thumbnailObject,
+                                            ImageInfo imageInfo) {
         UploadPictureResult uploadPictureResult = new UploadPictureResult();
         int picWidth = compressedCiObject.getWidth();
         int picHeight = compressedCiObject.getHeight();
         double picScale = NumberUtil.round(picWidth * 1.0 / picHeight, 2).doubleValue();
 
         // 封装图片的返回结果
+        // 设置图片压缩后的图片 url
         uploadPictureResult.setUrl(cosClientConfig.getHost() + '/' + compressedCiObject.getKey());
         uploadPictureResult.setPicName(FileUtil.mainName(originalFilename));
         uploadPictureResult.setPicSize(compressedCiObject.getSize().longValue());
@@ -118,6 +124,8 @@ public abstract class PictureUploadTemplate {
         uploadPictureResult.setPicHeight(picHeight);
         uploadPictureResult.setPicScale(picScale);
         uploadPictureResult.setPicFormat(compressedCiObject.getFormat());
+        uploadPictureResult.setPicColor(imageInfo.getAve());
+        // 设置缩略图
         uploadPictureResult.setThumbnailUrl(cosClientConfig.getHost() + '/' + thumbnailObject.getKey());
 
         return uploadPictureResult;

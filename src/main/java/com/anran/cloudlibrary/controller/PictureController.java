@@ -2,8 +2,12 @@ package com.anran.cloudlibrary.controller;
 
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.RandomUtil;
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
 import com.anran.cloudlibrary.annotation.AuthCheck;
+import com.anran.cloudlibrary.api.aliyunai.AliYunAiApi;
+import com.anran.cloudlibrary.api.aliyunai.model.CreateOutPaintingTaskResponse;
+import com.anran.cloudlibrary.api.aliyunai.model.GetOutPaintingTaskResponse;
 import com.anran.cloudlibrary.api.imagesearch.ImagSearchAPIFacade;
 import com.anran.cloudlibrary.api.imagesearch.model.ImageSearchResult;
 import com.anran.cloudlibrary.common.BaseResponse;
@@ -524,5 +528,35 @@ public class PictureController {
         User loginUser = userService.getLoginUser(request);
         List<PictureVO> pictureVOList = pictureService.searchPictureByColor(spaceId, picColor, loginUser);
         return ResultUtils.success(pictureVOList);
+    }
+
+    /**
+     * 创建 AI 扩图任务
+     */
+    @PostMapping("/out_painting/create_task")
+    public BaseResponse<CreateOutPaintingTaskResponse> createPictureOutPaintingTask(
+            @RequestBody CreatePictureOutPaintingTaskRequest createPictureOutPaintingTaskRequest,
+            HttpServletRequest request) {
+        Long pictureId = createPictureOutPaintingTaskRequest.getPictureId();
+        // todo 这个句子简化是，pictureId 空了才是致命的伤害
+        if (createPictureOutPaintingTaskRequest == null || pictureId == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        User loginUser = userService.getLoginUser(request);
+        CreateOutPaintingTaskResponse response = pictureService.createPictureOutPaintingTask(createPictureOutPaintingTaskRequest, loginUser);
+        return ResultUtils.success(response);
+    }
+
+    @Resource
+    private AliYunAiApi aliYunAiApi;
+
+    /**
+     * 查询 AI 扩图任务
+     */
+    @GetMapping("/out_painting/get_task")
+    public BaseResponse<GetOutPaintingTaskResponse> getPictureOutPaintingTask(String taskId) {
+        ThrowUtils.throwIf(StrUtil.isBlank(taskId), ErrorCode.PARAMS_ERROR);
+        GetOutPaintingTaskResponse task = aliYunAiApi.getOutPaintingTask(taskId);
+        return ResultUtils.success(task);
     }
 }

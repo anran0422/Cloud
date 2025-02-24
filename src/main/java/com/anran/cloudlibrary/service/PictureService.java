@@ -1,5 +1,6 @@
 package com.anran.cloudlibrary.service;
 
+import com.anran.cloudlibrary.api.aliyunai.model.CreateOutPaintingTaskResponse;
 import com.anran.cloudlibrary.model.VO.PictureVO;
 import com.anran.cloudlibrary.model.dto.picture.*;
 import com.anran.cloudlibrary.model.entity.Picture;
@@ -100,4 +101,10 @@ public interface PictureService extends IService<Picture> {
      * 根据主色调搜索图片
      */
     List<PictureVO> searchPictureByColor(Long spaceId, String picColor, User loginUser);
+
+    /**
+     * Al 扩图
+     */
+    CreateOutPaintingTaskResponse createPictureOutPaintingTask(
+            CreatePictureOutPaintingTaskRequest createPictureOutPaintingTaskRequest, User loginUser);
 }

@@ -48,3 +48,7 @@ cos:
     secretKey: qxY4OOErGQOFwQB471h96tUYQEsJVUGK
     region: ap-beijing
     bucket: cloud-1311088844
+
+# 阿里云 AI 配置
+aliYunAi:
+  apiKey: sk-dc0d7cbe527941fe8975a095009b1c83

@@ -14,7 +14,6 @@ import com.anran.cloudlibrary.model.dto.space.*;
 import com.anran.cloudlibrary.model.entity.Space;
 import com.anran.cloudlibrary.model.entity.User;
 import com.anran.cloudlibrary.model.enums.SpaceLevelEnum;
-import com.anran.cloudlibrary.model.enums.UserRoleEnum;
 import com.anran.cloudlibrary.service.SpaceService;
 import com.anran.cloudlibrary.service.UserService;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -64,9 +63,8 @@ public class SpaceController {
         Space space = spaceService.getById(spaceId);
         ThrowUtils.throwIf(space == null, ErrorCode.NOT_FOUND_ERROR);
         // 仅本人和管理员可以删除
-        if (!space.getUserId().equals(loginUser.getId()) && UserRoleEnum.ADMIN.getValue().equals(loginUser.getUserRole())) {
-            throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
-        }
+        spaceService.checkSpaceAuth(loginUser, space);
+
         // 操作数据库
         boolean res = spaceService.removeById(spaceId);
         ThrowUtils.throwIf(!res, ErrorCode.PARAMS_ERROR);
@@ -190,9 +188,8 @@ public class SpaceController {
         ThrowUtils.throwIf(oldSpace == null, ErrorCode.NOT_FOUND_ERROR);
         // 仅本人和管理员可以编辑
         User loginUser = userService.getLoginUser(request);
-        if (!oldSpace.getUserId().equals(loginUser.getId()) && !userService.isAdmin(loginUser)) {
-            throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
-        }
+        spaceService.checkSpaceAuth(loginUser, oldSpace);
+        
         // 补充审核参数
         spaceService.fillSpaceBySpaceLevel(space);
         // 操作数据库

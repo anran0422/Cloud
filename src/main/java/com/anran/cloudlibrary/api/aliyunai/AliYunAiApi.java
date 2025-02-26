@@ -1,6 +1,5 @@
 package com.anran.cloudlibrary.api.aliyunai;
 
-
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.http.ContentType;
 import cn.hutool.http.Header;
@@ -21,7 +20,7 @@ import org.springframework.stereotype.Component;
 public class AliYunAiApi {
     // 读取配置文件
     @Value("${aliYunAi.apiKey}")
-    private static String apiKey;
+    private String apiKey;
 
     // 创建任务地址
     public static final String CREATE_OUT_PAINTING_TASK_URL = "https://dashscope.aliyuncs.com/api/v1/services/aigc/image2image/out-painting";
@@ -82,4 +81,3 @@ public class AliYunAiApi {
         }
     }
 }
-

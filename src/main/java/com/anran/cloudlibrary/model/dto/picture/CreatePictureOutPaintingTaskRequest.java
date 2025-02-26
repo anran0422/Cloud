@@ -7,6 +7,7 @@ import java.io.Serializable;
 
 @Data
 public class CreatePictureOutPaintingTaskRequest implements Serializable {
+
     /**
      * 图片 id
      */

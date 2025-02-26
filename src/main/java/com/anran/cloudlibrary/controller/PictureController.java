@@ -537,9 +537,8 @@ public class PictureController {
     public BaseResponse<CreateOutPaintingTaskResponse> createPictureOutPaintingTask(
             @RequestBody CreatePictureOutPaintingTaskRequest createPictureOutPaintingTaskRequest,
             HttpServletRequest request) {
-        Long pictureId = createPictureOutPaintingTaskRequest.getPictureId();
         // todo 这个句子简化是，pictureId 空了才是致命的伤害
-        if (createPictureOutPaintingTaskRequest == null || pictureId == null) {
+        if (createPictureOutPaintingTaskRequest == null || createPictureOutPaintingTaskRequest.getPictureId() == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
         User loginUser = userService.getLoginUser(request);

@@ -5,6 +5,7 @@ import cn.hutool.core.util.StrUtil;
 import com.anran.cloudlibrary.exception.BusinessException;
 import com.anran.cloudlibrary.exception.ErrorCode;
 import com.anran.cloudlibrary.exception.ThrowUtils;
+import com.anran.cloudlibrary.manager.auth.StpKit;
 import com.anran.cloudlibrary.mapper.UserMapper;
 import com.anran.cloudlibrary.model.VO.LoginUserVO;
 import com.anran.cloudlibrary.model.VO.UserVO;
@@ -83,6 +84,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         }
         // 4、记录用户的登录状态
         request.getSession().setAttribute(USER_LOGIN_STATE, user);
+        // todo 记录用户登录态到 Sa-token，便于空间鉴权时使用，注意保证该用户信息与 SpringSession 中的信息过期时间一致
+        StpKit.SPACE.login(user.getId());
+        StpKit.SPACE.getSession().set(USER_LOGIN_STATE, user);
         return this.getLoginUserVO(user);
     }
 

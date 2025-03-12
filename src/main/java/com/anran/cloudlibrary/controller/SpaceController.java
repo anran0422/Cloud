@@ -9,6 +9,7 @@ import com.anran.cloudlibrary.constant.UserConstant;
 import com.anran.cloudlibrary.exception.BusinessException;
 import com.anran.cloudlibrary.exception.ErrorCode;
 import com.anran.cloudlibrary.exception.ThrowUtils;
+import com.anran.cloudlibrary.manager.auth.SpaceUserAuthManager;
 import com.anran.cloudlibrary.model.VO.SpaceVO;
 import com.anran.cloudlibrary.model.dto.space.*;
 import com.anran.cloudlibrary.model.entity.Space;
@@ -35,6 +36,9 @@ public class SpaceController {
 
     @Resource
     private SpaceService spaceService;
+
+    @Resource
+    private SpaceUserAuthManager spaceUserAuthManager;
 
 
     @PostMapping("/add")
@@ -123,9 +127,14 @@ public class SpaceController {
         ThrowUtils.throwIf(id <= 0, ErrorCode.PARAMS_ERROR);
         // 查询数据库
         Space space = spaceService.getById(id);
-        ThrowUtils.throwIf(space == null, ErrorCode.PARAMS_ERROR);
+        ThrowUtils.throwIf(space == null, ErrorCode.NOT_FOUND_ERROR);
+        SpaceVO spaceVO = spaceService.getSpaceVO(space, request);
+        User loginUser = userService.getLoginUser(request);
+        List<String> permissionList = spaceUserAuthManager.getPermissionList(space, loginUser);
+        spaceVO.setPermissionList(permissionList);
+
         // 返回空间
-        return ResultUtils.success(spaceService.getSpaceVO(space, request));
+        return ResultUtils.success(spaceVO);
     }
 
     /**
@@ -189,7 +198,7 @@ public class SpaceController {
         // 仅本人和管理员可以编辑
         User loginUser = userService.getLoginUser(request);
         spaceService.checkSpaceAuth(loginUser, oldSpace);
-        
+
         // 补充审核参数
         spaceService.fillSpaceBySpaceLevel(space);
         // 操作数据库

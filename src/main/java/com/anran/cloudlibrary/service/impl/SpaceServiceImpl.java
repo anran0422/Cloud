@@ -13,9 +13,13 @@ import com.anran.cloudlibrary.model.VO.UserVO;
 import com.anran.cloudlibrary.model.dto.space.SpaceAddRequest;
 import com.anran.cloudlibrary.model.dto.space.SpaceQueryRequest;
 import com.anran.cloudlibrary.model.entity.Space;
+import com.anran.cloudlibrary.model.entity.SpaceUser;
 import com.anran.cloudlibrary.model.entity.User;
 import com.anran.cloudlibrary.model.enums.SpaceLevelEnum;
+import com.anran.cloudlibrary.model.enums.SpaceRoleEnum;
+import com.anran.cloudlibrary.model.enums.SpaceTypeEnum;
 import com.anran.cloudlibrary.service.SpaceService;
+import com.anran.cloudlibrary.service.SpaceUserService;
 import com.anran.cloudlibrary.service.UserService;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -46,6 +50,14 @@ public class SpaceServiceImpl extends ServiceImpl<SpaceMapper, Space>
     @Resource
     private TransactionTemplate transactiontemplate;
 
+    @Resource
+    private SpaceUserService spaceUserService;
+
+    // todo 为了部署关闭分表
+//    @Resource
+//    @Lazy
+//    private DynamicShardingManager dynamicShardingManager;
+
     @Override
     public long addSpace(SpaceAddRequest spaceAddRequest, User loginUser) {
         // 在此处将实体类和 DTO 转换
@@ -58,6 +70,9 @@ public class SpaceServiceImpl extends ServiceImpl<SpaceMapper, Space>
         if (spaceAddRequest.getSpaceLevel() == null) {
             space.setSpaceLevel(SpaceLevelEnum.COMMON.getValue());
         }
+        if (spaceAddRequest.getSpaceType() == null) {
+            spaceAddRequest.setSpaceType(SpaceTypeEnum.PRIVATE.getValue());
+        }
         this.fillSpaceBySpaceLevel(space);
 
         // 2. 校验参数
@@ -69,19 +84,35 @@ public class SpaceServiceImpl extends ServiceImpl<SpaceMapper, Space>
         if (SpaceLevelEnum.COMMON.getValue() != spaceAddRequest.getSpaceLevel() && !userService.isAdmin(loginUser)) {
             throw new BusinessException(ErrorCode.NO_AUTH_ERROR, "无权限创建指定级别空间");
         }
-        // 4. 控制同一用户只能创建一个私有空间
+        // 4. 控制同一用户只能创建一个私有空间、一个团队空间
         // 加锁实现
         String lock = String.valueOf(userId).intern();
         synchronized (lock) {
             Long newSpaceId = transactiontemplate.execute(status -> {
-                boolean exists = this.lambdaQuery().eq(Space::getId, userId).exists();
-                ThrowUtils.throwIf(exists, ErrorCode.OPERATION_ERROR, "每个用户仅能拥有一个私有空间");
+                if (!userService.isAdmin(loginUser)) {
+                    boolean exists = this.lambdaQuery()
+                            .eq(Space::getUserId, userId)
+                            .eq(Space::getSpaceType, spaceAddRequest.getSpaceType())
+                            .exists();
+                    ThrowUtils.throwIf(exists, ErrorCode.OPERATION_ERROR, "每个用户每类空间仅能创建一个");
+                }
                 // 写入数据库
                 boolean res = this.save(space);
                 ThrowUtils.throwIf(!res, ErrorCode.OPERATION_ERROR);
+                // 如果是团队空间，关联新增团队成员记录
+                if (SpaceTypeEnum.TEAM.getValue() == spaceAddRequest.getSpaceType()) {
+                    SpaceUser spaceUser = new SpaceUser();
+                    spaceUser.setSpaceId(space.getId());
+                    spaceUser.setUserId(userId);
+                    spaceUser.setSpaceRole(SpaceRoleEnum.ADMIN.getValue());
+                    res = spaceUserService.save(spaceUser);
+                    ThrowUtils.throwIf(!res, ErrorCode.OPERATION_ERROR, "创建团队成员记录失败");
+                }
+                // todo 创建分表 为了项目部署，关闭分表
+//                dynamicShardingManager.createSpacePictureTable(space);
+                // 返回新写入的数据 id
                 return space.getId();
             });
-
             // 返回结果包装类，可以做处理
             return Optional.ofNullable(newSpaceId).orElse(-1L);
         }
@@ -99,6 +130,7 @@ public class SpaceServiceImpl extends ServiceImpl<SpaceMapper, Space>
         Long userId = spaceQueryRequest.getUserId();
         String spaceName = spaceQueryRequest.getSpaceName();
         Integer spaceLevel = spaceQueryRequest.getSpaceLevel();
+        Integer spaceType = spaceQueryRequest.getSpaceType();
         String sortField = spaceQueryRequest.getSortField();
         String sortOrder = spaceQueryRequest.getSortOrder();
 
@@ -107,6 +139,7 @@ public class SpaceServiceImpl extends ServiceImpl<SpaceMapper, Space>
         queryWrapper.eq(ObjUtil.isNotEmpty(userId), "userId", userId);
         queryWrapper.like(StrUtil.isNotBlank(spaceName), "spaceName", spaceName);
         queryWrapper.eq(ObjUtil.isNotEmpty(spaceLevel), "spaceLevel", spaceLevel);
+        queryWrapper.eq(ObjUtil.isNotEmpty(spaceType), "spaceType", spaceType);
         // 排序
         queryWrapper.orderBy(StrUtil.isNotEmpty(sortField), sortOrder.equals("ascend"), sortField);
         return queryWrapper;
@@ -164,6 +197,8 @@ public class SpaceServiceImpl extends ServiceImpl<SpaceMapper, Space>
         String spaceName = space.getSpaceName(); // 也就这两条可以校验
         Integer spaceLevel = space.getSpaceLevel();
         SpaceLevelEnum spaceLevelEnum = SpaceLevelEnum.getEnumByValue(spaceLevel);
+        Integer spaceType = space.getSpaceType();
+        SpaceTypeEnum spaceTypeEnum = SpaceTypeEnum.getEnumByValue(spaceType);
 
         // 创建时校验
         if (add) {
@@ -173,11 +208,17 @@ public class SpaceServiceImpl extends ServiceImpl<SpaceMapper, Space>
             if (spaceLevel == null) {
                 throw new BusinessException(ErrorCode.PARAMS_ERROR, "空间级别不能为空");
             }
+            if (spaceType == null) {
+                throw new BusinessException(ErrorCode.PARAMS_ERROR, "空间类型不能为空");
+            }
         }
 
         // 修改时，如果要改变空间级别
         if (spaceLevel != null && spaceLevelEnum == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "空间级别不存在");
+        }
+        if (spaceType != null && spaceTypeEnum == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "空间类型不存在");
         }
         if (StrUtil.isNotBlank(spaceName) && spaceName.length() > 20) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "空间名称过长");

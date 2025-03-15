@@ -13,7 +13,7 @@ import com.anran.cloudlibrary.model.dto.spaceuser.SpaceUserQueryRequest;
 import com.anran.cloudlibrary.model.entity.Space;
 import com.anran.cloudlibrary.model.entity.SpaceUser;
 import com.anran.cloudlibrary.model.entity.User;
-import com.anran.cloudlibrary.model.enums.SpaceTypeEnum;
+import com.anran.cloudlibrary.model.enums.SpaceRoleEnum;
 import com.anran.cloudlibrary.service.SpaceService;
 import com.anran.cloudlibrary.service.SpaceUserService;
 import com.anran.cloudlibrary.service.UserService;
@@ -111,7 +111,7 @@ public class SpaceUserServiceImpl extends ServiceImpl<SpaceUserMapper, SpaceUser
                 .collect(Collectors.toList());
         // 1. 收集需要关联查询的用户 ID 和空间 ID
         Set<Long> userIdSet = spaceUserList.stream()
-                .map(SpaceUser::getId)
+                .map(SpaceUser::getUserId)
                 .collect(Collectors.toSet());
         Set<Long> spaceIdSet = spaceUserList.stream()
                 .map(SpaceUser::getSpaceId)
@@ -131,6 +131,7 @@ public class SpaceUserServiceImpl extends ServiceImpl<SpaceUserMapper, SpaceUser
                 user = userIdUserListMap.get(userId).get(0);
             }
             spaceUserVO.setUser(userService.getUserVO(user));
+
             // 填充空间信息
             Space space = null;
             if (spaceIdSpaceListMap.containsKey(spaceId)) {
@@ -158,9 +159,8 @@ public class SpaceUserServiceImpl extends ServiceImpl<SpaceUserMapper, SpaceUser
         }
         // 校验空间角色
         String spaceRole = spaceUser.getSpaceRole();
-        SpaceTypeEnum spaceTypeEnum = SpaceTypeEnum.getEnumByValue(Integer.valueOf(spaceRole));
-        //todo 根据 spaceRole 查 spaceTypeEnum，所以语句可以简化
-        if (spaceRole != null && spaceTypeEnum == null) {
+        SpaceRoleEnum spaceRoleEnum = SpaceRoleEnum.getEnumByValue(spaceRole);
+        if (spaceRole != null && spaceRoleEnum == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "空间角色不存在");
         }
     }

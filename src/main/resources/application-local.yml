@@ -4,6 +4,17 @@ server:
     context-path: /api
 
 spring:
+  # Redis 配置
+  redis:
+    database: 0
+    host: 127.0.0.1
+    port: 6379
+    timeout: 5000
+  # session 配置
+  session:
+    store-type: redis
+    # session 1 天过期
+    timeout: 86400
   application:
     name:
       CloudLibrary

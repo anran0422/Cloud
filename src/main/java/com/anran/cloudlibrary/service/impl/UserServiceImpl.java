@@ -119,6 +119,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         }
         // 移除登录状态
         request.getSession().removeAttribute(USER_LOGIN_STATE);
+        StpKit.SPACE.logout();
         return true;
     }
 

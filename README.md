@@ -68,6 +68,10 @@
 
 ![](https://cloud-1311088844.cos.ap-beijing.myqcloud.com/public_share/project/%E6%9D%83%E9%99%90%E6%8E%A7%E5%88%B6.jpg)
 
+使用 websocket 实现实时通信，团队协同编辑
+
+![](https://cloud-1311088844.cos.ap-beijing.myqcloud.com/public_share/project/%E5%8D%8F%E5%90%8C%E7%BC%96%E8%BE%91.jpg)
+
 
 ## 知识点
 - 拆解复杂业务，从 0 开始设计实现企业级系统

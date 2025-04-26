@@ -18,9 +18,9 @@ spring:
     username: root
     password: 12345678
 
-
-  profiles:
-    active: local
+  # 可以通过运行配置的方式设置这
+  #  profiles:
+  #    active: local
 
   # 空间图片分表
   shardingsphere:

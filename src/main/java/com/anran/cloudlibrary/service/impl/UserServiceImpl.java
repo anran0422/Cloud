@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static com.anran.cloudlibrary.constant.UserConstant.DEFAULT_AVATAR;
 import static com.anran.cloudlibrary.constant.UserConstant.USER_LOGIN_STATE;
 
 /**
@@ -58,7 +59,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         User user = new User();
         user.setUserAccount(userAccount);
         user.setUserPassword(encryptPassword);
-        user.setUserName("新用户");
+        user.setUserName(userAccount);
+        user.setUserAvatar(DEFAULT_AVATAR);
         user.setUserRole(UserRoleEnum.USER.getValue());
         this.save(user);
         return user.getId();

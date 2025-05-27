@@ -1,8 +1,8 @@
-# 智能协同云图库
+# Yondo图库
 
 ## 项目介绍
 
-&emsp;&emsp;基于 Vue 3 + Spring Boot + COS + AI + WebSocket 的 **企业级智能协同云图库平台**。
+&emsp;&emsp;基于 Vue 3 + Spring Boot + COS + AI + WebSocket 的 **企业级云图库平台**。
 
 
 &emsp;&emsp;分为公共图库、私有图库和团队共享图库三个阶段。用户可在平台公开上传和检索图片；管理员可以上传、审核和管理分析图片。
